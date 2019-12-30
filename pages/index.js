@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axiosInstance from '../apis/storemanager';
 import Avatar from '@material-ui/core/Avatar';
@@ -48,16 +48,29 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export default function SignIn() {
+export default function index(props) {
   const classes = useStyles();
+
   const [username, updateUsername] = useState('');
   const [password, updatePassword] = useState('');
+  const [fadeSubmitBtn, setFadeSubmitBtn] = React.useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const { aha, osisa } = props.url.query;
+
+    if (aha & osisa) {
+      updateUsername(aha);
+      updatePassword(osisa);
+    };
+  }, [true]);
   
   function logIn(e, username, password) {
     e.preventDefault();
-    
+
+    setFadeSubmitBtn(true);
+
     axiosInstance.post('/auth/login', {usernameInput: username, passwordInput: password})
       .then((data) => {
         router.push('/CartPage');
@@ -65,7 +78,23 @@ export default function SignIn() {
         sessionStorage.setItem('storeUserRole', data.data.role);
         sessionStorage.setItem('storeUserId', data.data.id);
       })
-      .catch(err => console.log(err));
+      .catch((err) => {
+        if (err.message.includes(401)) alert('wrong username or password');
+        setFadeSubmitBtn(false);
+      });
+  }
+
+  function renderSubmitButton() {
+    if (!fadeSubmitBtn) return (
+      <Button type="submit" fullWidth variant="contained" color="primary"
+        className={classes.submit}
+      >Sign In</Button>
+    );
+    return (
+      <Button type="submit" fullWidth variant="contained" color="primary"
+        className={classes.submit}
+      disabled>Sign In</Button>
+    );
   }
 
   return (
@@ -107,15 +136,7 @@ export default function SignIn() {
             control={<Checkbox value="remember" color="primary" />}
             label="Remember me"
           />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            color="primary"
-            className={classes.submit}
-          >
-            Sign In
-          </Button>
+          {renderSubmitButton()}
           <Grid container>
             <Grid item xs>
               <Link href="#" variant="body2">
@@ -124,7 +145,7 @@ export default function SignIn() {
             </Grid>
             <Grid item>
               <Link href="#" variant="body2">
-                {"Don't have an account? Sign Up"}
+                {null/*"Don't have an account? Sign Up"*/}
               </Link>
             </Grid>
           </Grid>
